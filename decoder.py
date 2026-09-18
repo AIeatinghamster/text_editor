@@ -1,8 +1,8 @@
 import struct
-
+from file_format import (Object, TextObject, Page)
 
 MAGIC = b"untx"
-
+objects = []
 
 def unpack_color(data, offset):
     r, g, b, a = struct.unpack_from(
@@ -111,7 +111,7 @@ def unpack_style_run(data, offset):
 
     return run, offset
 
-
+pages=[]
 def read_file(filename):
     with open(filename, "rb") as f:
         data = f.read()
@@ -159,46 +159,27 @@ def read_file(filename):
         font_registry[font_id] = font_name
 
 
-    text_byte_length = struct.unpack_from(
-        "<I",
-        data,
-        offset
-    )[0]
-
-    offset += 4
-
-    text_bytes = data[
-        offset:offset + text_byte_length
-    ]
-
-    offset += text_byte_length
-
-    text = text_bytes.decode("utf-8")
-
-
-    run_count = struct.unpack_from(
-        "<I",
-        data,
-        offset
-    )[0]
-
-    offset += 4
-
-    style_runs = []
-
-    for _ in range(run_count):
-        run, offset = unpack_style_run(
-            data,
-            offset
-        )
-
-        style_runs.append(run)
-
+    page_amount=struct.unpack_from("<I", data, offset)[0]
+    offset+=4
+    for page in range(page_amount):
+        pages.append(Page.unpack(data, offset))
     return {
         "version": version,
         "fonts": font_registry,
-        "text": text,
-        "style_runs": style_runs
+        "pages": pages
     }
 if __name__=="__main__":
-    print(read_file("test.untx"))
+    st=read_file("test.untx")
+    print(st)
+    print("_"*30)
+    for page in st["pages"]:
+        print(page.text)
+        print(page.style_runs)
+        
+        for object in page.objects:
+            print(object.text)
+            print(object.style_runs)
+            print(object.position)
+            print(object.size)
+        print("_"*30)
+
